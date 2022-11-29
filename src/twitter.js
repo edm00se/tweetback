@@ -176,7 +176,11 @@ class Twitter {
 					let imgHtml = "";
 					// TODO the await use here on eleventyImg could be improved
 					try {
-						let stats = await eleventyImg(media.media_url_https, ELEVENTY_IMG_OPTIONS);
+						media.orig_media_url_https = media.media_url_https;
+						const fileName = `${media.orig_media_url_https}`.split('/').at(-1).split('?')[0];
+						const nwUrl = `http://localhost:3000/${tweet.id_str}-${fileName}`;
+						
+						let stats = await eleventyImg(nwUrl, ELEVENTY_IMG_OPTIONS);
 						let imgRef = stats.jpeg[0];
 						imgHtml = `<img src="${imgRef.url}" width="${imgRef.width}" height="${imgRef.height}" alt="${media.alt_text || "oh my god twitter doesn’t include alt text from images in their API"}" class="tweet-media" onerror="fallbackMedia(this)" loading="lazy" decoding="async">`;
 						medias.push(`<a href="${imgRef.url}">${imgHtml}</a>`);
@@ -189,6 +193,10 @@ class Twitter {
 						text = text.replace(media.url, "");
 
 						let remoteVideoUrl = media.video_info.variants[0].url;
+
+						const fileName = `${media.video_info.variants[0].url}`.split('/').at(-1).split('?')[0];
+						media.video_info.variants[0].url = `http://localhost:3000/thumbs/${tweet.id_str}-${fileName}`;
+						media.media_url_https = `http://localhost:3000/${tweet.id_str}-${fileName}`;
 
 						try {
 							let stats = await eleventyImg(media.media_url_https, ELEVENTY_IMG_OPTIONS);
