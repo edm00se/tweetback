@@ -203,8 +203,16 @@ class Twitter {
 					// remove photo URL
 					textReplacements.set(media.url, { html: "" });
 
+					const fileNameAr = media.media_url_https.split('/');
+					const fileName = fileNameAr[fileNameAr.length-1];
+					let localImgPath = `http://localhost:3000/${tweet.id}-${fileName}`;
+
 					try {
-						let html = await this.getImage(media.media_url_https, media.alt_text || "");
+						// let html = await this.getImage(media.media_url_https, media.alt_text || "");
+						media.orig_media_url_https = media.media_url_https;
+						const fileName = `${media.orig_media_url_https}`.split('/').at(-1).split('?')[0];
+						const nwUrl = `http://localhost:3000/${tweet.id_str}-${fileName}`;
+						let html = await eleventyImg(nwUrl, ELEVENTY_IMG_OPTIONS);
 						medias.push(html);
 					} catch(e) {
 						console.log("Image request error", e.message);
@@ -225,10 +233,13 @@ class Twitter {
 						}
 
 						let remoteVideoUrl = videoResults[0].url;
+						const fileName = `${media.video_info.variants[0].url}`.split('/').at(-1).split('?')[0];
+						let localImgPath = `http://localhost:3000/${tweet.id}-${fileName}`;
 
 						try {
 							let videoUrl = remoteVideoUrl;
-							let posterStats = await eleventyImg(media.media_url_https, ELEVENTY_IMG_OPTIONS);
+							// let posterStats = await eleventyImg(media.media_url_https, ELEVENTY_IMG_OPTIONS);
+							let posterStats = await eleventyImg(localImgPath, ELEVENTY_IMG_OPTIONS);
 							if(!this.isRetweet(tweet)) {
 								videoUrl = `/video/${tweet.id}.mp4`;
 
