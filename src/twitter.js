@@ -7,6 +7,7 @@ const eleventyFetch = require("@11ty/eleventy-fetch");
 const fs = require("fs");
 const fsp = fs.promises;
 const { escapeAttribute } = require("entities/lib/escape.js");
+const path = require("path");
 
 const ELEVENTY_VIDEO_OPTIONS = {
 	duration: "*"
@@ -197,18 +198,24 @@ class Twitter {
 			}
 		}
 
+		// unique to my situation, don't need a duplicated auto tweeted IG image
+		if(tweet.source == '<a href="https://ifttt.com" rel="nofollow">IFTTT</a>') {
+			delete tweet.extended_entities;
+		}
 		if( tweet.extended_entities ) {
 			for(let media of tweet.extended_entities.media ) {
 				if(media.type === "photo") {
+					// uses `npx serve path/to/archived/dir/` created via timhutton/twitter-archive-parser
+					const localImgPath = `http://localhost:3000/media/${tweet.id}-${path.basename(media.media_url_https)}`;
 					// remove photo URL
 					textReplacements.set(media.url, { html: "" });
 
 					try {
-						let html = await this.getImage(media.media_url_https, media.alt_text || "");
+						let html = await this.getImage(localImgPath, media.alt_text || "");
 						medias.push(html);
 					} catch(e) {
 						console.log("Image request error", e.message);
-						medias.push(`<a href="${media.media_url_https}">${media.media_url_https}</a>`);
+						medias.push(`<a href="${localImgPath}">${localImgPath}</a>`);
 					}
 				} else if(media.type === "animated_gif" || media.type === "video") {
 					if(media.video_info && media.video_info.variants) {
@@ -227,15 +234,18 @@ class Twitter {
 						let remoteVideoUrl = videoResults[0].url;
 
 						try {
+							// uses `npx serve path/to/archived/dir/` created via timhutton/twitter-archive-parser
+							const localImgPath = `http://localhost:3000/media/${tweet.id}-${path.basename(media.media_url_https)}`.replace('.jpg','.mp4');
+							let localThumbPath = `http://localhost:3000/media/thumbs/${tweet.id}-${path.basename(media.media_url_https)}`.replace('.jpg','.png');
 							let videoUrl = remoteVideoUrl;
-							let posterStats = await eleventyImg(media.media_url_https, ELEVENTY_IMG_OPTIONS);
+							let posterStats = await eleventyImg(localImgPath, ELEVENTY_IMG_OPTIONS);
 							if(!this.isRetweet(tweet)) {
 								videoUrl = `/video/${tweet.id}.mp4`;
 
 								await this.saveVideo(remoteVideoUrl, `.${videoUrl}`)
 							}
 
-							let imgRef = posterStats.jpeg[0];
+							let imgRef = await eleventyImg(localThumbPath, ELEVENTY_IMG_OPTIONS).jpeg[0];
 							medias.push(`<video muted controls ${media.type === "animated_gif" ? "loop" : ""} src="${videoUrl}" poster="${imgRef.url}" class="tweet-media u-video"></video>`);
 						} catch(e) {
 							console.log("Video request error", e.message);
