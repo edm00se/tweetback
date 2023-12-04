@@ -198,10 +198,6 @@ class Twitter {
 			}
 		}
 
-		// unique to my situation, don't need a duplicated auto tweeted IG image
-		if(tweet.source == '<a href="https://ifttt.com" rel="nofollow">IFTTT</a>') {
-			delete tweet.extended_entities;
-		}
 		if( tweet.extended_entities ) {
 			for(let media of tweet.extended_entities.media ) {
 				if(media.type === "photo") {
